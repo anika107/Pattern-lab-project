@@ -1,1 +1,4 @@
 Pattern Lab stuff
+
+Conversion of fasta files to npy files -->
+https://github.com/Zarin106/Pattern_Lab_fasta_to_npy
