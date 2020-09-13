@@ -1,0 +1,88 @@
+import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import KFold
+from sklearn.svm import SVC
+
+pos5k = "A.thaliana5289_pos_kemer3.npy"
+neg5k = "A.thaliana5289_neg_kemer3.npy"
+pos1k = "A.thaliana1000indep_pos_kemer3.npy"
+neg1k = "A.thaliana1000indep_neg_kemer3.npy"
+
+x_train_pos = np.load(pos5k)
+x_train_neg = np.load(neg5k)
+x_test_pos = np.load(pos1k)
+x_test_neg = np.load(neg1k)
+
+y_train_pos = np.tile(1, 5289)
+y_train_neg = np.tile(0, 5289)
+y_test_pos = np.tile(1, 1000)
+y_test_neg = np.tile(0, 1000)
+
+x_training = np.concatenate((x_train_pos, x_train_neg), axis= 0)
+y_training = np.concatenate((y_train_pos, y_train_neg))
+
+x_test = np.concatenate((x_test_pos, x_test_neg), axis = 0)
+y_test = np.concatenate((y_test_pos, y_test_neg))
+
+kmer1_pos5k = "A.thaliana5289_pos_kemer1.npy"
+kmer1_neg5k = "A.thaliana5289_neg_kemer1.npy"
+kmer1_pos1k = "A.thaliana1000indep_pos_kemer1.npy"
+kmer1_neg1k = "A.thaliana1000indep_neg_kemer1.npy"
+
+kmer1_x_train_pos = np.load(kmer1_pos5k)
+kmer1_x_train_neg = np.load(kmer1_neg5k)
+kmer1_x_test_pos = np.load(kmer1_pos1k)
+kmer1_x_test_neg = np.load(kmer1_neg1k)
+
+kmer1_y_train_pos = np.tile(1, 5289)
+kmer1_y_train_neg = np.tile(0, 5289)
+kmer1_y_test_pos = np.tile(1, 1000)
+kmer1_y_test_neg = np.tile(0, 1000)
+
+kmer1_x_training = np.concatenate((kmer1_x_train_pos, kmer1_x_train_neg), axis= 0)
+kmer1_y_training = np.concatenate((kmer1_y_train_pos, kmer1_y_train_neg))
+
+kmer1_x_test = np.concatenate((kmer1_x_test_pos, kmer1_x_test_neg), axis = 0)
+kmer1_y_test = np.concatenate((kmer1_y_test_pos, kmer1_y_test_neg))
+
+merge_x_training = np.concatenate((x_training , kmer1_x_training), axis= 1)
+merge_x_test = np.concatenate((x_test, kmer1_x_test), axis = 1)
+
+seed = 42 # for same size
+np.random.seed(seed)
+kf = KFold(n_splits=5, random_state=seed, shuffle=True)
+
+C_list = [.005, .05, .25, 1, 5]
+
+val_accuracy_list = []
+train_accuracy_list = []
+test_accuracy_list = []
+
+for c in C_list:
+    print("The value of C is: ", c)
+    count = 1
+    clf = SVC(C=c, random_state=seed)
+    a=1
+    for train_index, val_index in kf.split(merge_x_training):
+        print("fold:", a)
+        X_train, X_val = merge_x_training[train_index], merge_x_training[val_index]
+        y_train, y_val = y_training[train_index], y_training[val_index]
+
+        clf.fit(X_train, y_train)
+
+        y_val_pred = clf.predict(X_val)
+        val_accuracy = accuracy_score(y_val, y_val_pred)
+        val_accuracy_list.append(val_accuracy)
+
+        y_train_pred = clf.predict(X_train)
+        train_accuracy = accuracy_score(y_train, y_train_pred)
+        train_accuracy_list.append(train_accuracy)
+        a=a+1
+    print("done")
+    t= np.array(train_accuracy_list)
+    v= np.array(val_accuracy_list)
+    print(np.average(t))
+    print(np.average(v))
+
+
+
