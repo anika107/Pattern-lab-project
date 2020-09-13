@@ -1,0 +1,57 @@
+import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import KFold
+from sklearn.svm import SVC
+
+x_train_neg = np.load("A.thaliana5289_neg_kemer1.npy")
+x_train_pos = np.load("A.thaliana5289_pos_kemer1.npy")
+x_test_neg = np.load("A.thaliana1000indep_neg_kemer1.npy")
+x_test_pos = np.load("A.thaliana1000indep_pos_kemer1.npy")
+
+y_train_neg = np.tile(0, 5289)
+y_train_pos = np.tile(1, 5289)
+y_test_neg = np.tile(0, 1000)
+y_test_pos = np.tile(1, 1000)
+
+print(x_train_pos.shape)
+print(y_train_pos.shape)
+
+seed = 42 # for same size
+np.random.seed(seed)
+
+X_train = np.concatenate((x_train_pos, x_train_neg), axis=0)
+Y_train = np.concatenate((y_train_pos, y_train_neg))
+
+X_test = np.concatenate((x_test_pos, x_test_neg), axis=0)
+Y_test = np.concatenate((y_test_pos, y_test_neg))
+
+print(X_test.shape)
+print(Y_test.shape)
+
+kf = KFold(n_splits=5, random_state=seed, shuffle=True)
+
+c = 10
+clf = SVC(C=c, random_state=seed)  
+
+a = 1
+val_accuracy_list = []
+train_accuracy_list = []
+for train_index, val_index in kf.split(X_train):
+    print("fold:" ,a)
+    #print("TRAIN:", train_index, "VAL:", val_index)
+    X_training, X_val = X_train[train_index], X_train[val_index]
+    Y_training, Y_val = Y_train[train_index], Y_train[val_index]
+    clf.fit(X_training, Y_training) 
+    y_val_pred = clf.predict(X_val)  
+    val_accuracy = accuracy_score(Y_val, y_val_pred)
+    val_accuracy_list.append(val_accuracy)
+    y_train_pred = clf.predict(X_training)  
+    train_accuracy = accuracy_score(Y_training, y_train_pred)
+    train_accuracy_list.append(train_accuracy)
+    a = a+1
+print("done")
+
+t= np.array(train_accuracy_list)
+v= np.array(val_accuracy_list)
+print(np.average(t))
+print(np.average(v))
